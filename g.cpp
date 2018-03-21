@@ -16,7 +16,13 @@ int main ()
     papa.right = "dffasfsdsdfa";
     
     
-    cout << papa.left << ", " << papa.right << endl;
+    cout << papa.right << endl;
+    
+    size_t f = papa.right.find("fa");
+    papa.right.replace(f, std::string("fa").length(), "w");
+    
+    
+    cout << papa.right << endl;
     
     /*string str = "asdf";
     str.append("waawawa");
