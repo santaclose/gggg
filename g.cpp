@@ -19,7 +19,7 @@ int main ()
 
     for (int i = 0; i < fileContents.length(); i++)
     {
-      if (fileContents.at(i) == '>' || fileContents.at(i) == '|')
+      if (fileContents.at(i) == '-' || fileContents.at(i) == '|')
       {
         ruleCount++;
       }
@@ -33,28 +33,39 @@ int main ()
     {
       if (fileContents.at(i) == '-')
       {
-        rules[currentRule].left = fileContents.substr(auxLeft, i);
+        rules[currentRule].left = fileContents.substr(auxLeft, i-auxLeft);
         auxLeft = i + 2;
       }
       else if (fileContents.at(i) == '|')
       {
-        rules[currentRule].right = fileContents.substr(auxLeft, i);
+        rules[currentRule].right = fileContents.substr(auxLeft, i-auxLeft);
         rules[currentRule + 1].left = rules[currentRule].left;
         currentRule++;
         auxLeft = i + 1;
       }
       else if (fileContents.at(i) == '\n')
       {
-        rules[currentRule].right = fileContents.substr(auxLeft, i);
+        rules[currentRule].right = fileContents.substr(auxLeft, i-auxLeft);
         currentRule++;
         auxLeft = i + 1;
       }
     }
 
+
+    // print rules
+
     for (int i = 0; i < ruleCount; i++)
     {
       cout << rules[i].left << ", " << rules[i].right << endl;
     }
+
+
+
+
+
+
+
+
 
     //cout << asdf << endl << "wwwwwwwwwwwwwwwwwwwwww" << endl;
     //char c = ifs.get();
