@@ -48,13 +48,14 @@ bool stringContainsNonTerminal(string str, vector<string> nonTerminals)
   return false;
 }
 
+/*
 void writeFinalStrings(vector<string> finalStrings)
 {
   for (auto i : finalStrings)
   {
     cout << i << endl;
   }
-}
+}*/
 
 vector<string> findAndReplace(string str, string toFind, string replaceWith)
 {
@@ -79,18 +80,18 @@ vector<string> findAndReplace(string str, string toFind, string replaceWith)
   return result;
 }
 
-void iterate(int iterationCount, rule* rules, int ruleCount, vector<string> currentStrings, vector<string> nonTerminals, vector<string> finalStrings)
+void iterate(rule* rules, int ruleCount, vector<string> currentStrings, vector<string> nonTerminals/*, ofstream &output*/)
 {
   vector<string> newStrings;
   for (auto i : currentStrings)
   {
     for (int j = 0; j < ruleCount; j++)
     {
-      if (stringContainsSubstr(i, rules[j].left))
+      if (stringContainsSubstr(i, rules[j].left)) // aplying rules
       {
         // returns all possible cases for the rule, just one replacement each time
         vector<string> ruleStrings = findAndReplace(i, rules[j].left, rules[j].right); // string, toFind, replaceWith
-        for (auto i : ruleStrings)
+        for (auto i : ruleStrings) // insert only new strings
         {
           if (find(newStrings.begin(), newStrings.end(), i) == newStrings.end()) //newStrings does not contain i
           {
@@ -102,34 +103,38 @@ void iterate(int iterationCount, rule* rules, int ruleCount, vector<string> curr
     }
   }
 
+  fstream output;
+  output.open ("span.ls", fstream::out | fstream::app);
+  cout << "iteration:" << endl;
   for (auto i : newStrings)
   {
+    //cout << i << ", ";
     if (!stringContainsNonTerminal(i, nonTerminals))
     {
-      finalStrings.push_back(i);
+      cout << "found some string: \"" << i << "\"" << endl;
+      output << i << endl; // write i to output
     }
   }
+  output.close();
+  cout << endl;
 
-  iterationCount--;
-  if (iterationCount == 0)
+  if (newStrings.size() > 0)
   {
-    //writeFinalStrings(newStrings, nonTerminals);
-    for (auto i : finalStrings)
-      cout << i << endl;
-    return;
+    iterate(rules, ruleCount, newStrings, nonTerminals/*, output*/);
   }
   else
   {
-    iterate(iterationCount, rules, ruleCount, newStrings, nonTerminals, finalStrings);
+    //output.close();
   }
+
 }
 
 
 int main ()
 {
-    ifstream ifs ("test.txt", ifstream::in);
+    //ofstream ofs ("span.ls");
+    ifstream ifs ("text.txt", ifstream::in);
     string fileContents((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
-
 
     // get rule count
     int ruleCount = 0;
@@ -145,7 +150,7 @@ int main ()
     rule rules[ruleCount];
     vector<string> nonTerminals;
 
-    // fill rules
+    // set up rules
 
     int currentRule = 0;
     int aux = 0;
@@ -179,13 +184,10 @@ int main ()
     //for (auto i : nonTerminals) // access by value, the type of i is int
     //    cout << i << endl;
 
-
-    int iterationCount = 4;
     vector<string> currentStrings;
     currentStrings.push_back(nonTerminals.front()); // push axiom
-    vector<string> finalStrings;
 
-    iterate(iterationCount, rules, ruleCount, currentStrings, nonTerminals, finalStrings);
+    iterate(rules, ruleCount, currentStrings, nonTerminals/*, ofs*/);
 
     return 0;
 }
