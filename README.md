@@ -3,7 +3,9 @@ grammar span
 
 
 usage:
-```g mode modeArgs inputFile [outputFile]```
+```
+g mode modeArgs inputFile [outputFile]
+```
 
 examples:
 ```
