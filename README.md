@@ -2,10 +2,10 @@
 grammar span
 
 
-#usage:
-`g mode modeArgs inputFile [outputFile]`
+usage:
+```g mode modeArgs inputFile [outputFile]```
 
-#examples:
+examples:
 ```
 g r 10000 in.txt span.ls
 g r 10000 in.txt
