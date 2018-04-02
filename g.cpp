@@ -12,6 +12,13 @@ struct rule
     string right;
 };
 
+struct grammar
+{
+  rule* rules;
+  int ruleCount;
+  vector<string> nonTerminals;
+};
+
 bool stringMatchesString(string a, string b, int position)
 {
   for (int i = 0; i < b.length(); i++)
@@ -48,16 +55,7 @@ bool stringContainsNonTerminal(string str, vector<string> nonTerminals)
   return false;
 }
 
-/*
-void writeFinalStrings(vector<string> finalStrings)
-{
-  for (auto i : finalStrings)
-  {
-    cout << i << endl;
-  }
-}*/
-
-vector<string> findAndReplace(string str, string toFind, string replaceWith)
+vector<int> getMatchingIndexes(string str, string toFind)
 {
   vector<int> positions;
 
@@ -68,7 +66,12 @@ vector<string> findAndReplace(string str, string toFind, string replaceWith)
       positions.push_back(i);
     }
   }
+  return positions;
+}
 
+vector<string> findAndReplace(string str, string toFind, string replaceWith)
+{
+  vector<int> positions = getMatchingIndexes(str, toFind);
   vector<string> result;
 
   for (auto i : positions)
@@ -80,7 +83,7 @@ vector<string> findAndReplace(string str, string toFind, string replaceWith)
   return result;
 }
 
-void iterate(rule* rules, int ruleCount, vector<string> currentStrings, vector<string> nonTerminals/*, ofstream &output*/)
+void breadth(rule* rules, int ruleCount, vector<string> currentStrings, vector<string> nonTerminals, string outputFile)
 {
   vector<string> newStrings;
   for (auto i : currentStrings)
@@ -103,91 +106,142 @@ void iterate(rule* rules, int ruleCount, vector<string> currentStrings, vector<s
     }
   }
 
-  fstream output;
-  output.open ("span.ls", fstream::out | fstream::app);
-  cout << "iteration:" << endl;
-  for (auto i : newStrings)
-  {
-    //cout << i << ", ";
-    if (!stringContainsNonTerminal(i, nonTerminals))
-    {
-      cout << "found some string: \"" << i << "\"" << endl;
-      output << i << endl; // write i to output
-    }
-  }
-  output.close();
-  cout << endl;
-
   if (newStrings.size() > 0)
   {
-    iterate(rules, ruleCount, newStrings, nonTerminals/*, output*/);
+    fstream output;
+    output.open (outputFile, fstream::out | fstream::app);
+    cout << "iteration:" << endl;
+    for (auto i : newStrings)
+    {
+      //cout << i << ", ";
+      if (!stringContainsNonTerminal(i, nonTerminals))
+      {
+        cout << "found some string: \"" << i << "\"" << endl;
+        output << i << endl; // write i to output
+      }
+    }
+    output.close();
+    cout << endl;
+    breadth(rules, ruleCount, newStrings, nonTerminals, outputFile);
   }
-  else
-  {
-    //output.close();
-  }
-
 }
 
-
-int main ()
+void randomGen(rule* rules, int ruleCount, vector<string> nonTerminals, int stringNumber, string outputFile)
 {
-    //ofstream ofs ("span.ls");
-    ifstream ifs ("text.txt", ifstream::in);
-    string fileContents((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
-
-    // get rule count
-    int ruleCount = 0;
-
-    for (int i = 0; i < fileContents.length(); i++)
+  ofstream output;
+  output.open (outputFile);
+  for (int i = 0; i < stringNumber; i++)
+  {
+    string str = nonTerminals.front();
+    while (stringContainsNonTerminal(str, nonTerminals))
     {
-      if (fileContents.at(i) == '-' || fileContents.at(i) == '|')
+      rule currentRule = rules[rand() % ruleCount];
+      if (stringContainsSubstr(str, currentRule.left))
       {
-        ruleCount++;
+        vector<int> positions = getMatchingIndexes(str, currentRule.left);
+        str.replace(positions[rand() % positions.size()], currentRule.left.length(), currentRule.right);
       }
     }
+    output << str << endl;
+    //cout << "generated string: " << str << endl;
+  }
+  output.close();
+}
 
-    rule rules[ruleCount];
-    vector<string> nonTerminals;
+static grammar getGrammar(string filePath)
+{
+  ifstream ifs (filePath, ifstream::in);
+  string fileContents((istreambuf_iterator<char>(ifs)), istreambuf_iterator<char>());
 
-    // set up rules
+  grammar grmr;
 
-    int currentRule = 0;
-    int aux = 0;
-    for (int i = 0; i < fileContents.length(); i++)
+  int rc = 0;
+
+  for (int i = 0; i < fileContents.length(); i++)
+  {
+    if (fileContents.at(i) == '-' || fileContents.at(i) == '|')
     {
-      if (fileContents.at(i) == '-')
+      rc++;
+    }
+  }
+
+  grmr.ruleCount = rc;
+
+  grmr.rules = new rule[rc];
+
+  // vector<string> nonTerminals;
+
+  // set up rules
+
+  int currentRule = 0;
+  int aux = 0;
+  for (int i = 0; i < fileContents.length(); i++)
+  {
+    if (fileContents.at(i) == '-')
+    {
+      string leftSide = fileContents.substr(aux, i - aux);
+      grmr.rules[currentRule].left = leftSide;
+      if (find(grmr.nonTerminals.begin(), grmr.nonTerminals.end(), leftSide) == grmr.nonTerminals.end()) // if vector does not contain
       {
-        string leftSide = fileContents.substr(aux, i - aux);
-        rules[currentRule].left = leftSide;
-        if (find(nonTerminals.begin(), nonTerminals.end(), leftSide) == nonTerminals.end()) // if vector does not contain
-        {
-          nonTerminals.push_back(leftSide);
-        }
-        aux = i + 2;
+        grmr.nonTerminals.push_back(leftSide);
       }
-      else if (fileContents.at(i) == '|')
-      {
-        rules[currentRule].right = fileContents.substr(aux, i - aux);
-        rules[currentRule + 1].left = rules[currentRule].left;
-        currentRule++;
-        aux = i + 1;
-      }
-      else if (fileContents.at(i) == '\n')
-      {
-        rules[currentRule].right = fileContents.substr(aux, i - aux);
-        currentRule++;
-        aux = i + 1;
-      }
+      aux = i + 2;
+    }
+    else if (fileContents.at(i) == '|')
+    {
+      grmr.rules[currentRule].right = fileContents.substr(aux, i - aux);
+      grmr.rules[currentRule + 1].left = grmr.rules[currentRule].left;
+      currentRule++;
+      aux = i + 1;
+    }
+    else if (fileContents.at(i) == '\n')
+    {
+      grmr.rules[currentRule].right = fileContents.substr(aux, i - aux);
+      currentRule++;
+      aux = i + 1;
+    }
+  }
+
+  return grmr;
+}
+
+int main (int argc, char** argv)
+{
+  // g r 10000 in.txt span.ls
+  // g r 10000 in.txt
+  // g b in.txt span.ls
+  // g b in.txt
+
+    if (argc < 3 || argc > 5)
+    {
+      cout << "did nothing" << endl;
+      return -1;
     }
 
-    //for (auto i : nonTerminals) // access by value, the type of i is int
-    //    cout << i << endl;
+    if (argv[1][0] == 'r')
+    {
+      int count = atoi(argv[2]);
+      string inputFile = argv[3];
+      string outputFile = "span.ls";
+      if (argc > 4)
+        outputFile = argv[4];
 
-    vector<string> currentStrings;
-    currentStrings.push_back(nonTerminals.front()); // push axiom
+      grammar grmr = getGrammar(inputFile);
 
-    iterate(rules, ruleCount, currentStrings, nonTerminals/*, ofs*/);
+      randomGen(grmr.rules, grmr.ruleCount, grmr.nonTerminals, count, outputFile);
+    }
+    else
+    {
+      string inputFile = argv[2];
+      string outputFile = "span.ls";
+      if (argc > 3)
+        outputFile = argv[3];
 
+      grammar grmr = getGrammar(inputFile);
+
+      vector<string> currentStrings;
+      currentStrings.push_back(grmr.nonTerminals.front());
+      breadth(grmr.rules, grmr.ruleCount, currentStrings, grmr.nonTerminals, outputFile);
+    }
     return 0;
 }

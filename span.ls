@@ -1,7 +1,4 @@
-pq
-qp
-qpq
-pqp
+ascc4071941
 abpq
 pqab
 ababpq
